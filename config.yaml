@@ -1,5 +1,5 @@
 data:
-  raw_dir: "data/sample_raw"
+  raw_dir: "data/raw"
   model_dir: "models/current"
   report_dir: "reports/current"
 
