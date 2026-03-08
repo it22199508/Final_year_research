@@ -1,0 +1,23 @@
+[project]
+name = "insider-gru"
+version = "0.1.0"
+description = "GRU-based insider threat detection"
+requires-python = ">=3.10"
+
+authors = [{name = "Project"}]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
