@@ -133,15 +133,121 @@ pip install -e .
 
 ## 7. How to Run the Dashboards
 
-From the repository root:
+This repository contains **5 separate dashboards** that can run independently or simultaneously on different ports.
 
-Main alerts dashboard:
+### Quick Start - Interactive Launcher
 
 ```powershell
-streamlit run apps/streamlit_app.py
+.\START_DASHBOARDS.ps1
+```
+This interactive menu lets you choose which dashboard(s) to run, or launch all at once.
+
+---
+
+### Run Dashboards Individually
+
+#### 1. DEMF Anomaly Detection Dashboard (Port 8501)
+
+**Using PowerShell Script:**
+```powershell
+.\run_demf_dashboard.ps1
 ```
 
-Email Privilege Misuse Detector (single-event scoring + configurable risk scoring + JSON report export):
+**Using Direct Command:**
+```bash
+streamlit run app_streamlit.py --server.port 8501
+```
+
+**Features:**
+- DEMF (Data-driven Ensemble Machine Learning Framework)
+- One-Class SVM + Autoencoder ensemble
+- Real-time anomaly scoring
+- Feature importance analysis
+
+---
+
+#### 2. Insider Threat Monitoring Dashboard (Port 8502)
+
+**Using PowerShell Script:**
+```powershell
+.\run_soc_dashboard.ps1
+```
+
+**Using Direct Command:**
+```bash
+streamlit run apps/streamlit_app.py --server.port 8502
+```
+
+**Features:**
+- AI-driven real-time alerts
+- Threat monitoring and verification
+- Alert hash integrity (planned)
+
+---
+
+#### 3. HEADS Threat Monitoring Dashboard (Port 8503)
+
+**Using PowerShell Script:**
+```powershell
+.\run_email_dashboard.ps1
+```
+
+**Using Direct Command:**
+```bash
+streamlit run streamlit_app/app.py --server.port 8503
+```
+
+**Features:**
+- HEADS (Hybrid Environment Authentication Anomaly Detection)
+- Multi-page interface
+- Authentication anomaly detection
+
+---
+
+#### 4. Unified HEADS Dashboard (Port 8504)
+
+**Using PowerShell Script:**
+```powershell
+.\run_unified_dashboard.ps1
+```
+
+**Using Direct Command:**
+```bash
+streamlit run apps/unified_dashboard.py --server.port 8504
+```
+
+**Features:**
+- All detection modules in one interface
+- Cross-module correlation
+- Unified alert view
+- Comprehensive reporting
+
+---
+
+#### 5. NSDM Insider Threat Dashboard (Port 8505)
+
+**Using PowerShell Script:**
+```powershell
+.\run_nsdm_dashboard.ps1
+```
+
+**Using Direct Command:**
+```bash
+streamlit run nsdm/dashboard.py --server.port 8505
+```
+
+**Features:**
+- NSDM (Network Security and Data Mining)
+- CERT r4.2 dataset analysis
+- Random Forest + Local Outlier Factor ensemble
+- Real-time threat monitoring
+- Test user analysis (users 701-1000)
+
+---
+
+### Additional Dashboard Options
+
+Email Privilege Misuse Detector (configurable risk scoring + JSON export):
 
 ```powershell
 streamlit run apps/email_privilege_dashboard.py
@@ -153,18 +259,37 @@ Login/Device anomaly dashboards:
 streamlit run apps/login_time_window_dashboard.py
 ```
 
-SOC / training dashboards:
+SOC / Training dashboards:
 
 ```powershell
 streamlit run apps/soc_cyber_dashboard.py
 streamlit run apps/training_dashboard.py
 ```
 
-Optional launcher helper:
+---
+
+### Running Multiple Dashboards Simultaneously
+
+All dashboards run on different ports and can be launched together:
 
 ```powershell
-python apps/run_email_dashboard.py
+# Open 5 terminal windows and run:
+streamlit run app_streamlit.py --server.port 8501          # DEMF
+streamlit run apps/streamlit_app.py --server.port 8502     # Insider Threat
+streamlit run streamlit_app/app.py --server.port 8503      # HEADS
+streamlit run apps/unified_dashboard.py --server.port 8504 # Unified
+streamlit run nsdm/dashboard.py --server.port 8505         # NSDM
 ```
+
+Or use the launcher option [6] to open all automatically.
+
+---
+
+### Dashboard Documentation
+
+For detailed dashboard documentation, see:
+- **All Dashboards:** [DASHBOARD_README.md](DASHBOARD_README.md)
+- **NSDM Specific:** [nsdm/README.md](nsdm/README.md)
 
 ## 8. How to Train the GRU Model
 
@@ -298,3 +423,14 @@ Dashboards also produce JSON reports via download and optional disk persistence 
 - Expand integrity verification into a dedicated verification dashboard/tool.
 - Compare against baselines and ablations to quantify sequential modeling benefits.
 
+# Navigate to project root
+cd C:\Users\Ashen\Desktop\Final_year_research
+
+# Step 1: Train the NSDM models (this creates the RF and LOF models)
+python nsdm/train_model.py
+
+# Step 2: Generate test user predictions (this creates the dashboard data)
+python nsdm/predict_test_users.py
+
+# Step 3: Now run the dashboard
+streamlit run nsdm/dashboard.py --server.port 8505
