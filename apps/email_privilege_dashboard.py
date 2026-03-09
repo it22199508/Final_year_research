@@ -98,18 +98,45 @@ def _final_score_and_decision(
 ) -> tuple[float, bool, str]:
     """Compute final score based on mode and return (score, is_alert, decision)."""
 
-    combined = combine_pipeline_scores(
-        model_score=_clamp01(float(model_probability)),
-        manual_result={"manual_score": _clamp01(float(manual_score))},
-        mode=str(cfg.scoring_mode),
-        alpha=float(cfg.hybrid_alpha),
-        threshold=float(threshold),
-    )
+    # Keep existing behavior for non-hybrid modes via the shared pipeline helper.
+    if str(cfg.scoring_mode) != "Hybrid":
+        combined = combine_pipeline_scores(
+            model_score=_clamp01(float(model_probability)),
+            manual_result={"manual_score": _clamp01(float(manual_score))},
+            mode=str(cfg.scoring_mode),
+            alpha=float(cfg.hybrid_alpha),
+            threshold=float(threshold),
+        )
 
-    score = float(combined.get("final_score", 0.0))
-    decision = str(combined.get("decision", "OK"))
-    is_alert = decision.upper() == "ALERT"
-    return score, bool(is_alert), decision
+        score = float(combined.get("final_score", 0.0))
+        decision = str(combined.get("decision", "OK"))
+        is_alert = decision.upper() == "ALERT"
+        return score, bool(is_alert), decision
+
+    model_weight = _clamp01(float(cfg.hybrid_alpha))
+    manual_weight = _clamp01(1.0 - float(model_weight))
+
+    manual_score_clamped = _clamp01(float(manual_score))
+
+    model_score_value: float | None
+    try:
+        mp = float(model_probability)
+        if np.isnan(mp):
+            model_score_value = None
+        else:
+            model_score_value = _clamp01(mp)
+    except Exception:
+        model_score_value = None
+
+    # Safe fallback: if the model score is unavailable, use the manual score only.
+    if model_score_value is None:
+        score = manual_score_clamped
+    else:
+        score = (model_weight * model_score_value) + (manual_weight * manual_score_clamped)
+
+    decision = "ALERT" if float(score) >= float(threshold) else "OK"
+    is_alert = decision == "ALERT"
+    return float(score), bool(is_alert), str(decision)
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -413,15 +440,60 @@ def main() -> None:
         help="Case-insensitive substring match against the email content.",
     )
 
-    hybrid_alpha = st.sidebar.slider(
-        "Hybrid blending (model vs manual)",
-        0.0,
-        1.0,
-        0.50,
-        0.01,
-        disabled=(scoring_mode != "Hybrid"),
-        help="Alpha=1 uses only the model. Alpha=0 uses only the manual score.",
+    st.sidebar.subheader("Hybrid Blending Configuration")
+    hybrid_disabled = scoring_mode != "Hybrid"
+
+    _preset_to_weight = {
+        "Balanced (0.50 / 0.50)": 0.50,
+        "Model-Focused (0.70 / 0.30)": 0.70,
+        "Manual-Focused (0.30 / 0.70)": 0.30,
+        "Custom": None,
+    }
+
+    if "hybrid_model_weight" not in st.session_state:
+        st.session_state["hybrid_model_weight"] = 0.50
+    if "hybrid_blend_preset" not in st.session_state:
+        st.session_state["hybrid_blend_preset"] = "Balanced (0.50 / 0.50)"
+
+    preset_choice = st.sidebar.selectbox(
+        "Quick preset",
+        options=list(_preset_to_weight.keys()),
+        key="hybrid_blend_preset",
+        disabled=hybrid_disabled,
     )
+    preset_weight = _preset_to_weight.get(str(preset_choice))
+    if preset_weight is not None:
+        st.session_state["hybrid_model_weight"] = float(preset_weight)
+
+    model_weight = st.sidebar.slider(
+        "Model weight",
+        min_value=0.0,
+        max_value=1.0,
+        value=float(st.session_state["hybrid_model_weight"]),
+        step=0.05,
+        key="hybrid_model_weight",
+        disabled=hybrid_disabled,
+    )
+
+    # If the user drifts from a preset value, reflect that as "Custom".
+    if not hybrid_disabled:
+        active_preset_weight = _preset_to_weight.get(str(st.session_state.get("hybrid_blend_preset")))
+        if active_preset_weight is not None and abs(float(model_weight) - float(active_preset_weight)) > 1e-9:
+            st.session_state["hybrid_blend_preset"] = "Custom"
+
+    model_weight = _clamp01(float(model_weight))
+    manual_weight = _clamp01(1.0 - float(model_weight))
+
+    st.sidebar.write(f"Model weight: **{model_weight:.2f}**")
+    st.sidebar.write(f"Manual weight: **{manual_weight:.2f}**")
+    st.sidebar.caption(f"Final score = {model_weight:.2f} × model + {manual_weight:.2f} × manual")
+    st.sidebar.caption(
+        "Higher model weight increases the influence of the ML prediction. "
+        "Higher manual weight increases the influence of rule-based scoring."
+    )
+
+    # Keep backwards-compatible name for downstream config/persistence.
+    hybrid_alpha = float(model_weight)
 
     risk_cfg = ScoringConfig(
         threshold=float(_FIXED_THRESHOLD),

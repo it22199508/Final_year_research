@@ -32,9 +32,18 @@ htmlcov/
 .DS_Store
 Thumbs.db
 .vscode/
+.idea/
+
+# Local env/config
+.env
+.env.*
+*.env
 
 # Project generated artifacts
 outputs/
+
+# Generated streaming logs
+streaming/*.jsonl
 
 # Local datasets (large, derived, or proprietary)
 Dataset/
