@@ -59,13 +59,6 @@ hr {{ margin: 0.6rem 0; border-color: {'rgba(148,163,184,0.15)' if st.session_st
 </style>
 """, unsafe_allow_html=True)
 
-# Handle refresh without extra dependency
-if refresh_now:
-    st.rerun()
-if auto_refresh:
-    time.sleep(refresh_sec)
-    st.rerun()
-
 # ---------- Load data ----------
 df = None
 source_label = ""
@@ -319,3 +312,11 @@ with tab_table:
         tdf["timestamp"] = pd.to_datetime(tdf["timestamp"], errors="coerce")
         tdf = tdf.sort_values("timestamp", ascending=False)
     st.dataframe(tdf[cols_show].head(rows_to_show), use_container_width=True)
+
+# Handle refresh (at the end after all UI is rendered)
+if refresh_now:
+    st.rerun()
+
+if auto_refresh:
+    time.sleep(refresh_sec)
+    st.rerun()
