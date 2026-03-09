@@ -144,6 +144,28 @@ This interactive menu lets you choose which dashboard(s) to run, or launch all a
 
 ---
 
+### Launch 4 Core Dashboards (Single Command)
+
+**Run all 4 core detection dashboards with one command:**
+
+```powershell
+.\RUN_4_CORE_DASHBOARDS.ps1
+```
+
+This launches in separate windows:
+- **NSDM Dashboard** (Port 8505) - CERT r4.2 ensemble detection
+- **DEMF Dashboard** (Port 8501) - Ensemble ML anomaly detection
+- **HEADS Dashboard** (Port 8503) - Authentication anomaly detection
+- **Insider Threat Monitor** (Port 8502) - Real-time threat monitoring
+
+**Access URLs:**
+- NSDM: http://localhost:8505
+- DEMF: http://localhost:8501
+- HEADS: http://localhost:8503
+- Insider Threat: http://localhost:8502
+
+---
+
 ### Run Dashboards Individually
 
 #### 1. DEMF Anomaly Detection Dashboard (Port 8501)
