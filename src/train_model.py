@@ -223,8 +223,11 @@ def main():
     # ---------------- RANDOM FOREST ----------------
     print("\n🌲 Training Random Forest...")
     rf_model = RandomForestClassifier(
-        n_estimators=200,
-        max_depth=12,
+        n_estimators=120,
+        max_depth=8,
+        min_samples_split=10,
+        min_samples_leaf=5,
+        max_features="sqrt",
         random_state=42,
         class_weight="balanced",
         n_jobs=-1

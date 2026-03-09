@@ -19,14 +19,26 @@ from privacy_utils import sha256_hex
 
 warnings.filterwarnings("ignore")
 
+CHUNK_SIZE = 200000
+
 
 def safe_read_csv(path, usecols=None):
     if not os.path.exists(path):
         raise FileNotFoundError(f"Missing required file: {path}")
-    try:
-        return pd.read_csv(path, usecols=usecols)
-    except Exception:
-        return pd.read_csv(path)
+    return pd.read_csv(path, usecols=usecols, low_memory=False)
+
+
+def read_filtered_chunks(path, user_col, selected_set, usecols=None):
+    chunks = []
+    for chunk in pd.read_csv(path, usecols=usecols, chunksize=CHUNK_SIZE, low_memory=False):
+        if user_col in chunk.columns:
+            chunk[user_col] = chunk[user_col].astype(str)
+            chunk = chunk[chunk[user_col].isin(selected_set)]
+            if not chunk.empty:
+                chunks.append(chunk)
+    if chunks:
+        return pd.concat(chunks, ignore_index=True)
+    return pd.DataFrame(columns=usecols if usecols else [])
 
 
 def parse_dt(series):
@@ -63,7 +75,8 @@ def build_features_for_users(selected_users, split_name):
     logon = safe_read_csv(logon_path)
     print("logon columns:", list(logon.columns))
 
-    logon = logon[logon["user"].astype(str).isin(selected_set)].copy()
+    logon["user"] = logon["user"].astype(str)
+    logon = logon[logon["user"].isin(selected_set)].copy()
     logon["_dt"] = parse_dt(logon["date"])
     logon["_hour"] = logon["_dt"].dt.hour
     logon["_after_hours"] = logon["_hour"].apply(is_after_hours)
@@ -77,6 +90,14 @@ def build_features_for_users(selected_users, split_name):
         .sort_values(["user", "count"], ascending=[True, False])
         .drop_duplicates(subset=["user"])
         .rename(columns={"pc": "assigned_pc"})
+    )
+
+    last_seen_pc = (
+        logon.sort_values("_dt")
+        .dropna(subset=["_dt"])
+        .groupby("user")
+        .tail(1)[["user", "pc"]]
+        .rename(columns={"pc": "last_seen_pc"})
     )
 
     logon_agg = (
@@ -123,7 +144,8 @@ def build_features_for_users(selected_users, split_name):
     device = safe_read_csv(device_path)
     print("device columns:", list(device.columns))
 
-    device = device[device["user"].astype(str).isin(selected_set)].copy()
+    device["user"] = device["user"].astype(str)
+    device = device[device["user"].isin(selected_set)].copy()
     device["_connect"] = device["activity"].astype(str).str.lower().str.contains("connect")
 
     device_agg = (
@@ -136,122 +158,120 @@ def build_features_for_users(selected_users, split_name):
     )
 
     # ---------------- HTTP ----------------
-    print("Reading http.csv ...")
-    http = safe_read_csv(http_path)
-    print("http columns:", list(http.columns))
-
-    http = http[http["user"].astype(str).isin(selected_set)].copy()
-    http["url"] = http["url"].astype(str)
-
-    http["_is_upload"] = http["url"].str.lower().str.contains(
-        "upload|post|dropbox|drive|send|attach",
-        na=False
+    print("Reading http.csv in chunks ...")
+    http = read_filtered_chunks(
+        http_path,
+        user_col="user",
+        selected_set=selected_set,
+        usecols=["id", "date", "user", "pc", "url", "content"]
     )
+    print("http rows loaded:", len(http))
 
-    http["_domain"] = http["url"].str.extract(r"https?://([^/]+)", expand=False)
-    http["_domain"] = http["_domain"].fillna(http["url"].str.split("/").str[0])
-
-    http_agg = (
-        http.groupby("user")
-        .agg(
-            total_http=("id", "count"),
-            http_uploads=("_is_upload", "sum"),
-            unique_domains=("_domain", "nunique"),
+    if http.empty:
+        http_agg = pd.DataFrame(columns=["user", "total_http", "http_uploads", "unique_domains", "upload_ratio"])
+    else:
+        http["url"] = http["url"].astype(str)
+        http["_is_upload"] = http["url"].str.lower().str.contains(
+            "upload|post|dropbox|drive|send|attach",
+            na=False
         )
-        .reset_index()
-    )
+        http["_domain"] = http["url"].str.extract(r"https?://([^/]+)", expand=False)
+        http["_domain"] = http["_domain"].fillna(http["url"].str.split("/").str[0])
 
-    http_agg["upload_ratio"] = np.where(
-        http_agg["total_http"] > 0,
-        http_agg["http_uploads"] / http_agg["total_http"],
-        0.0,
-    )
+        http_agg = (
+            http.groupby("user")
+            .agg(
+                total_http=("id", "count"),
+                http_uploads=("_is_upload", "sum"),
+                unique_domains=("_domain", "nunique"),
+            )
+            .reset_index()
+        )
+
+        http_agg["upload_ratio"] = np.where(
+            http_agg["total_http"] > 0,
+            http_agg["http_uploads"] / http_agg["total_http"],
+            0.0,
+        )
 
     # ---------------- EMAIL ----------------
-    print("Reading email.csv ...")
-    email = safe_read_csv(email_path)
-    print("email columns:", list(email.columns))
-
-    email = email[email["user"].astype(str).isin(selected_set)].copy()
-
-    to_col = get_existing_column(email, ["to"])
-    cc_col = get_existing_column(email, ["cc"])
-    bcc_col = get_existing_column(email, ["bcc"])
-    size_col = get_existing_column(email, ["size"])
-    attach_col = get_existing_column(email, ["attachment_count", "attachments", "attachment", "att_count"])
-
-    if to_col is None:
-        email["_to"] = ""
-    else:
-        email["_to"] = email[to_col].astype(str)
-
-    if cc_col is None:
-        email["_cc"] = ""
-    else:
-        email["_cc"] = email[cc_col].astype(str)
-
-    if bcc_col is None:
-        email["_bcc"] = ""
-    else:
-        email["_bcc"] = email[bcc_col].astype(str)
-
-    email["_external"] = (
-        ~email["_to"].str.contains("DTAA", case=False, na=False)
-        | ~email["_cc"].str.contains("DTAA", case=False, na=False)
-        | ~email["_bcc"].str.contains("DTAA", case=False, na=False)
+    print("Reading email.csv in chunks ...")
+    email = read_filtered_chunks(
+        email_path,
+        user_col="user",
+        selected_set=selected_set,
+        usecols=["id", "date", "user", "pc", "to", "cc", "bcc", "from", "size", "attachments", "content"]
     )
+    print("email rows loaded:", len(email))
 
-    if size_col is not None:
-        email["_size"] = pd.to_numeric(email[size_col], errors="coerce").fillna(0)
+    if email.empty:
+        email_agg = pd.DataFrame(columns=[
+            "user", "total_emails", "external_emails", "total_attachments",
+            "avg_email_size", "external_email_ratio"
+        ])
     else:
-        email["_size"] = 0
+        to_col = get_existing_column(email, ["to"])
+        cc_col = get_existing_column(email, ["cc"])
+        bcc_col = get_existing_column(email, ["bcc"])
+        size_col = get_existing_column(email, ["size"])
+        attach_col = get_existing_column(email, ["attachment_count", "attachments", "attachment", "att_count"])
 
-    if attach_col is not None:
-        email["_attachment_count"] = pd.to_numeric(email[attach_col], errors="coerce").fillna(0)
-    else:
-        email["_attachment_count"] = 0
+        email["_to"] = email[to_col].astype(str) if to_col else ""
+        email["_cc"] = email[cc_col].astype(str) if cc_col else ""
+        email["_bcc"] = email[bcc_col].astype(str) if bcc_col else ""
 
-    email_agg = (
-        email.groupby("user")
-        .agg(
-            total_emails=("id", "count"),
-            external_emails=("_external", "sum"),
-            total_attachments=("_attachment_count", "sum"),
-            avg_email_size=("_size", "mean"),
+        email["_external"] = (
+            ~email["_to"].str.contains("DTAA", case=False, na=False)
+            | ~email["_cc"].str.contains("DTAA", case=False, na=False)
+            | ~email["_bcc"].str.contains("DTAA", case=False, na=False)
         )
-        .reset_index()
-    )
 
-    email_agg["external_email_ratio"] = np.where(
-        email_agg["total_emails"] > 0,
-        email_agg["external_emails"] / email_agg["total_emails"],
-        0.0,
-    )
+        email["_size"] = pd.to_numeric(email[size_col], errors="coerce").fillna(0) if size_col else 0
+        email["_attachment_count"] = pd.to_numeric(email[attach_col], errors="coerce").fillna(0) if attach_col else 0
+
+        email_agg = (
+            email.groupby("user")
+            .agg(
+                total_emails=("id", "count"),
+                external_emails=("_external", "sum"),
+                total_attachments=("_attachment_count", "sum"),
+                avg_email_size=("_size", "mean"),
+            )
+            .reset_index()
+        )
+
+        email_agg["external_email_ratio"] = np.where(
+            email_agg["total_emails"] > 0,
+            email_agg["external_emails"] / email_agg["total_emails"],
+            0.0,
+        )
 
     # ---------------- FILE ----------------
-    print("Reading file.csv ...")
-    file_df = safe_read_csv(file_path)
-    print("file columns:", list(file_df.columns))
-
-    file_df = file_df[file_df["user"].astype(str).isin(selected_set)].copy()
-
-    filename_col = get_existing_column(file_df, ["filename", "file"])
-
-    if filename_col is None:
-        file_df["_filename"] = "unknown"
-    else:
-        file_df["_filename"] = file_df[filename_col].astype(str)
-
-    file_agg = (
-        file_df.groupby("user")
-        .agg(
-            copied_files=("id", "count"),
-            unique_filenames=("_filename", "nunique"),
-        )
-        .reset_index()
+    print("Reading file.csv in chunks ...")
+    file_df = read_filtered_chunks(
+        file_path,
+        user_col="user",
+        selected_set=selected_set,
+        usecols=["id", "date", "user", "pc", "filename", "content"]
     )
+    print("file rows loaded:", len(file_df))
 
-    file_agg["copy_to_removable"] = file_agg["copied_files"]
+    if file_df.empty:
+        file_agg = pd.DataFrame(columns=["user", "copied_files", "unique_filenames", "copy_to_removable"])
+    else:
+        filename_col = get_existing_column(file_df, ["filename", "file"])
+        file_df["_filename"] = file_df[filename_col].astype(str) if filename_col else "unknown"
+
+        file_agg = (
+            file_df.groupby("user")
+            .agg(
+                copied_files=("id", "count"),
+                unique_filenames=("_filename", "nunique"),
+            )
+            .reset_index()
+        )
+
+        file_agg["copy_to_removable"] = file_agg["copied_files"]
 
     # ---------------- PSYCHOMETRIC ----------------
     print("Reading psychometric.csv ...")
@@ -266,10 +286,7 @@ def build_features_for_users(selected_users, split_name):
     psych = psych[psych["user"].isin(selected_set)].copy()
 
     for col in ["O", "C", "E", "A", "N"]:
-        if col in psych.columns:
-            psych[col] = pd.to_numeric(psych[col], errors="coerce").fillna(0)
-        else:
-            psych[col] = 0
+        psych[col] = pd.to_numeric(psych[col], errors="coerce").fillna(0) if col in psych.columns else 0
 
     psych["psych_risk"] = (
         (10 - psych["C"]) * 0.35 +
@@ -284,6 +301,8 @@ def build_features_for_users(selected_users, split_name):
     base = pd.DataFrame({"user": list(selected_users)})
 
     df = base.merge(logon_agg, on="user", how="left")
+    df = df.merge(assigned_pc, on="user", how="left")
+    df = df.merge(last_seen_pc, on="user", how="left")
     df = df.merge(device_agg, on="user", how="left")
     df = df.merge(http_agg, on="user", how="left")
     df = df.merge(email_agg, on="user", how="left")
@@ -291,8 +310,11 @@ def build_features_for_users(selected_users, split_name):
     df = df.merge(psych_agg, on="user", how="left")
 
     for col in df.columns:
-        if col != "user":
+        if col not in ["user", "assigned_pc", "last_seen_pc"]:
             df[col] = df[col].fillna(0)
+
+    df["assigned_pc"] = df["assigned_pc"].fillna("UNKNOWN")
+    df["last_seen_pc"] = df["last_seen_pc"].fillna("UNKNOWN")
 
     # ---------------- DERIVED FEATURES ----------------
     df["activity_volume"] = (

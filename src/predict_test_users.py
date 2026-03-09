@@ -21,13 +21,10 @@ def main():
 
     if not os.path.exists(TEST_FEATURES_FILE):
         raise SystemExit(f"❌ Missing test features file: {TEST_FEATURES_FILE}")
-
     if not os.path.exists(RF_MODEL_FILE):
         raise SystemExit(f"❌ Missing RF model: {RF_MODEL_FILE}")
-
     if not os.path.exists(LOF_MODEL_FILE):
         raise SystemExit(f"❌ Missing LOF model: {LOF_MODEL_FILE}")
-
     if not os.path.exists(SCALER_FILE):
         raise SystemExit(f"❌ Missing scaler: {SCALER_FILE}")
 
@@ -75,7 +72,6 @@ def main():
     df["rf_threat_probability"] = rf_proba
     df["lof_anomaly_score"] = lof_score
 
-    # Hybrid score
     df["threat_score"] = (
         0.6 * df["rf_threat_probability"] +
         0.4 * df["lof_anomaly_score"]
@@ -101,18 +97,19 @@ def main():
     for i, (_, row) in enumerate(df.head(10).iterrows(), 1):
         print(
             f"{i}. {row['user_id']} | "
+            f"PC={row.get('last_seen_pc', 'UNKNOWN')} | "
             f"score={row['threat_score']:.3f} | "
             f"risk={row['risk_level']} | "
             f"RF={row['rf_threat_probability']:.3f} | "
             f"LOF={row['lof_anomaly_score']:.3f}"
         )
 
-    # Save full prediction file
     df.to_csv(TEST_PRED_FILE, index=False)
 
-    # Save dashboard-friendly subset
     dashboard_cols = [
         "user_id",
+        "assigned_pc",
+        "last_seen_pc",
         "threat_score",
         "risk_level",
         "predicted_threat",

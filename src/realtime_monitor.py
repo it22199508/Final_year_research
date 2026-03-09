@@ -67,8 +67,9 @@ def main():
 
     df = df.sort_values("threat_score", ascending=False).reset_index(drop=True)
 
-    state = load_json(REALTIME_STATE_FILE, {"last_index": 0})
+    state = load_json(REALTIME_STATE_FILE, {"last_index": 0, "alert_counter": 0})
     last_index = state.get("last_index", 0)
+    alert_counter = state.get("alert_counter", 0)
 
     print(f"Loaded unseen test predictions: {len(df)}")
     print(f"Threat threshold   : {THREAT_THRESHOLD}")
@@ -88,14 +89,19 @@ def main():
 
             for _, row in batch.iterrows():
                 score = float(row.get("threat_score", 0))
+
                 if score < THREAT_THRESHOLD:
                     continue
 
+                alert_counter += 1
                 risk_level = get_alert_level(score)
 
                 event = {
+                    "alert_id": alert_counter,
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "user_id": str(row.get("user_id", "UNKNOWN")),
+                    "assigned_pc": str(row.get("assigned_pc", "UNKNOWN")),
+                    "last_seen_pc": str(row.get("last_seen_pc", "UNKNOWN")),
                     "threat_score": round(score, 4),
                     "risk_level": risk_level,
                     "rf_threat_probability": round(float(row.get("rf_threat_probability", 0)), 4),
@@ -114,7 +120,8 @@ def main():
                 append_alert(event)
 
                 print(
-                    f"⚠️ Alert: {event['user_id']} | "
+                    f"⚠️ Alert #{event['alert_id']}: {event['user_id']} | "
+                    f"PC={event['last_seen_pc']} | "
                     f"score={event['threat_score']:.3f} | "
                     f"risk={event['risk_level']}"
                 )
@@ -122,10 +129,16 @@ def main():
                 time.sleep(MONITOR_INTERVAL)
 
             last_index += TOP_N_LOOP
-            save_json(REALTIME_STATE_FILE, {"last_index": last_index})
+            save_json(REALTIME_STATE_FILE, {
+                "last_index": last_index,
+                "alert_counter": alert_counter
+            })
 
     except KeyboardInterrupt:
-        save_json(REALTIME_STATE_FILE, {"last_index": last_index})
+        save_json(REALTIME_STATE_FILE, {
+            "last_index": last_index,
+            "alert_counter": alert_counter
+        })
         print("\n🛑 Monitor stopped safely.")
 
 

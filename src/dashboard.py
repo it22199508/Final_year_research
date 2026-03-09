@@ -21,12 +21,17 @@ st.set_page_config(
     page_icon="🚨"
 )
 
-st.title("🚨 NSADM Insider Threat Monitoring Dashboard")
-st.caption("CERT r4.2 | Unseen Test Users | Clear Analyst View")
+top_left, top_right = st.columns([5, 1])
 
-# -------------------------
-# LOAD DATA
-# -------------------------
+with top_left:
+    st.title("🚨 NSADM Insider Threat Monitoring Dashboard")
+    st.caption("CERT r4.2 | Unseen Test Users | Analyst-Friendly View")
+
+with top_right:
+    if st.button("🔄 Refresh Live Alerts", use_container_width=True):
+        st.rerun()
+
+
 def load_live_alerts():
     if os.path.exists(REALTIME_ALERTS_FILE):
         try:
@@ -38,18 +43,34 @@ def load_live_alerts():
                         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
                     if "threat_score" in df.columns:
                         df["threat_score"] = pd.to_numeric(df["threat_score"], errors="coerce").fillna(0)
-                    return df.sort_values("timestamp", ascending=False)
-        except Exception:
-            pass
+                    if "alert_id" in df.columns:
+                        df["alert_id"] = pd.to_numeric(df["alert_id"], errors="coerce").fillna(0).astype(int)
+
+                    sort_cols = [c for c in ["alert_id", "timestamp"] if c in df.columns]
+                    if sort_cols:
+                        df = df.sort_values(sort_cols, ascending=False)
+
+                    return df
+        except Exception as e:
+            st.error(f"Failed to load live alerts: {e}")
     return pd.DataFrame()
+
 
 def load_test_dashboard():
     if os.path.exists(TEST_DASHBOARD_FILE):
-        df = pd.read_csv(TEST_DASHBOARD_FILE)
-        if "threat_score" in df.columns:
-            df["threat_score"] = pd.to_numeric(df["threat_score"], errors="coerce").fillna(0)
-        return df.sort_values("threat_score", ascending=False)
+        try:
+            df = pd.read_csv(TEST_DASHBOARD_FILE)
+            if "threat_score" in df.columns:
+                df["threat_score"] = pd.to_numeric(df["threat_score"], errors="coerce").fillna(0)
+            if "rf_threat_probability" in df.columns:
+                df["rf_threat_probability"] = pd.to_numeric(df["rf_threat_probability"], errors="coerce").fillna(0)
+            if "lof_anomaly_score" in df.columns:
+                df["lof_anomaly_score"] = pd.to_numeric(df["lof_anomaly_score"], errors="coerce").fillna(0)
+            return df.sort_values("threat_score", ascending=False)
+        except Exception as e:
+            st.error(f"Failed to load test dashboard data: {e}")
     return pd.DataFrame()
+
 
 live_df = load_live_alerts()
 full_df = load_test_dashboard()
@@ -58,9 +79,6 @@ if full_df.empty:
     st.error("Test dashboard data not found. Run predict_test_users.py first.")
     st.stop()
 
-# -------------------------
-# TOP KPI SECTION
-# -------------------------
 high_count = int((full_df["threat_score"] >= THREAT_THRESHOLD).sum())
 critical_count = int((full_df["threat_score"] >= CRITICAL_THRESHOLD).sum())
 medium_count = int(((full_df["threat_score"] >= 0.5) & (full_df["threat_score"] < THREAT_THRESHOLD)).sum())
@@ -69,21 +87,23 @@ very_low_count = int((full_df["threat_score"] < 0.3).sum())
 avg_score = float(full_df["threat_score"].mean()) if len(full_df) else 0.0
 
 last_alert_time = "N/A"
-if not live_df.empty and "timestamp" in live_df.columns and live_df["timestamp"].notna().any():
-    last_alert_time = live_df["timestamp"].max().strftime("%Y-%m-%d %H:%M:%S")
+latest_alert_id = "N/A"
+
+if not live_df.empty:
+    if "timestamp" in live_df.columns and live_df["timestamp"].notna().any():
+        last_alert_time = live_df["timestamp"].max().strftime("%Y-%m-%d %H:%M:%S")
+    if "alert_id" in live_df.columns:
+        latest_alert_id = str(int(live_df["alert_id"].max()))
 
 c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Users Analysed", len(full_df))
 c2.metric("High Risk", high_count)
 c3.metric("Critical", critical_count)
-c4.metric("Medium Risk", medium_count)
-c5.metric("Average Score", f"{avg_score:.3f}")
+c4.metric("Latest Alert ID", latest_alert_id)
+c5.metric("Last Alert Time", last_alert_time)
 
 st.divider()
 
-# -------------------------
-# RISK BREAKDOWN CARDS
-# -------------------------
 r1, r2, r3, r4, r5 = st.columns(5)
 r1.metric("VERY LOW", very_low_count)
 r2.metric("LOW", low_count)
@@ -93,9 +113,6 @@ r5.metric("CRITICAL", critical_count)
 
 st.divider()
 
-# -------------------------
-# FILTERS
-# -------------------------
 f1, f2, f3 = st.columns(3)
 
 risk_filter = f1.selectbox(
@@ -113,10 +130,12 @@ filtered = filtered[filtered["threat_score"] >= min_score]
 if risk_filter != "ALL" and "risk_level" in filtered.columns:
     filtered = filtered[filtered["risk_level"].astype(str) == risk_filter]
 
-# -------------------------
-# TABS
-# -------------------------
-tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Live Alerts", "All Test Users", "Analyst Table"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "Overview",
+    "Live Alerts",
+    "All Test Users",
+    "Analyst Table"
+])
 
 with tab1:
     left, right = st.columns(2)
@@ -152,66 +171,81 @@ with tab1:
     b4.metric("File-copy Users", int((full_df["copy_to_removable"] > 0).sum()) if "copy_to_removable" in full_df.columns else 0)
 
 with tab2:
-    st.subheader("Latest Live Alerts (High / Critical Only)")
+    st.subheader("🚨 Live Security Alerts")
+    st.caption("Click Refresh Live Alerts to load new alerts from the monitor")
 
     if live_df.empty:
-        st.info("No live alerts yet. Start realtime_monitor.py")
+        st.info("No alerts detected yet. Start realtime_monitor.py")
     else:
         latest_alerts = live_df.head(max_rows)
 
         for _, row in latest_alerts.iterrows():
             score = float(row["threat_score"])
             risk = str(row.get("risk_level", "UNKNOWN"))
-            user_id = str(row.get("user_id", "UNKNOWN"))
-            ts = row.get("timestamp", None)
+            user = str(row.get("user_id", "UNKNOWN"))
+            assigned_pc = str(row.get("assigned_pc", "UNKNOWN"))
+            last_seen_pc = str(row.get("last_seen_pc", "UNKNOWN"))
+            alert_id = row.get("alert_id", "N/A")
+
+            ts = row.get("timestamp")
             ts_text = pd.to_datetime(ts).strftime("%Y-%m-%d %H:%M:%S") if pd.notna(ts) else "N/A"
 
-            if score >= CRITICAL_THRESHOLD:
-                badge = "🔴 CRITICAL"
-                color = "#dc2626"
+            if risk == "CRITICAL":
+                icon = "🔴"
+            elif risk == "HIGH":
+                icon = "🟠"
+            elif risk == "MEDIUM":
+                icon = "🟡"
             else:
-                badge = "🟠 HIGH"
-                color = "#f97316"
+                icon = "🟢"
 
-            a, b = st.columns([4, 1])
+            with st.container(border=True):
+                a, b = st.columns([4, 1])
 
-            with a:
-                st.markdown(f"### {user_id}")
-                st.markdown(f"**Time:** {ts_text}")
-                st.markdown(f"**Threat Score:** {score:.3f}")
-                st.markdown(f"**Risk Level:** {risk}")
+                with a:
+                    st.markdown(f"### {icon} Alert #{alert_id} — {risk}")
+                    st.write(f"**User ID:** {user}")
+                    st.write(f"**Assigned PC:** {assigned_pc}")
+                    st.write(f"**Last Seen PC:** {last_seen_pc}")
+                    st.write(f"**Time:** {ts_text}")
 
-                indicators = []
-                if row.get("after_hours_logons", 0) > 0:
-                    indicators.append(f"🌙 {int(row['after_hours_logons'])} after-hours logons")
-                if row.get("foreign_pc_logons", 0) > 0:
-                    indicators.append(f"🖥️ {int(row['foreign_pc_logons'])} foreign-PC logons")
-                if row.get("usb_connects", 0) > 0:
-                    indicators.append(f"🔌 {int(row['usb_connects'])} USB connects")
-                if row.get("external_emails", 0) > 0:
-                    indicators.append(f"📧 {int(row['external_emails'])} external emails")
-                if row.get("http_uploads", 0) > 0:
-                    indicators.append(f"⬆️ {int(row['http_uploads'])} upload events")
-                if row.get("copy_to_removable", 0) > 0:
-                    indicators.append(f"💾 {int(row['copy_to_removable'])} removable-media copies")
+                    d1, d2, d3 = st.columns(3)
+                    d1.metric("Threat Score", f"{score:.3f}")
+                    d2.metric("RF Score", f"{float(row.get('rf_threat_probability', 0)):.3f}")
+                    d3.metric("LOF Score", f"{float(row.get('lof_anomaly_score', 0)):.3f}")
 
-                if indicators:
-                    st.markdown(" | ".join(indicators))
+                    indicators = []
+                    if row.get("after_hours_logons", 0) > 0:
+                        indicators.append("🌙 After-hours logins")
+                    if row.get("foreign_pc_logons", 0) > 0:
+                        indicators.append("🖥 Foreign PC access")
+                    if row.get("usb_connects", 0) > 0:
+                        indicators.append("🔌 USB device usage")
+                    if row.get("external_emails", 0) > 0:
+                        indicators.append("📧 External email activity")
+                    if row.get("copy_to_removable", 0) > 0:
+                        indicators.append("💾 File copied to removable media")
+                    if row.get("http_uploads", 0) > 0:
+                        indicators.append("⬆ Suspicious upload activity")
 
-            with b:
-                st.markdown(f"### {badge}")
-                st.progress(min(max(score, 0.0), 1.0), text=f"{score:.1%}")
+                    if indicators:
+                        st.write("**Indicators:**")
+                        for ind in indicators:
+                            st.write(f"- {ind}")
+                    else:
+                        st.write("**Indicators:** No strong indicators")
 
-            st.markdown(
-                f'<div style="height:4px; background-color:{color}; border-radius:8px; margin-bottom:16px;"></div>',
-                unsafe_allow_html=True
-            )
+                with b:
+                    st.metric("Severity", risk)
+                    st.progress(min(max(score, 0.0), 1.0), text=f"{score:.1%}")
 
 with tab3:
     st.subheader("All Test Users (Includes Low / Medium / High)")
 
     summary_cols = [
         "user_id",
+        "assigned_pc",
+        "last_seen_pc",
         "threat_score",
         "risk_level",
         "predicted_threat",
@@ -236,6 +270,8 @@ with tab4:
 
     table_cols = [
         "user_id",
+        "assigned_pc",
+        "last_seen_pc",
         "threat_score",
         "risk_level",
         "rf_threat_probability",
@@ -250,7 +286,7 @@ with tab4:
         "exfiltration_score",
         "suspicious_activity",
     ]
-    table_cols = [c for c in table_cols if c in filtered.columns]
+    table_cols = [c for c in filtered.columns if c in table_cols]
 
     st.dataframe(
         filtered[table_cols].head(max_rows),
@@ -260,4 +296,4 @@ with tab4:
     )
 
 st.divider()
-st.caption(f"Last dashboard refresh: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+st.caption(f"Dashboard refreshed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

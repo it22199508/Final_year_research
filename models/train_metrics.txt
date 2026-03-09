@@ -1,0 +1,24 @@
+CERT r4.2 TRAINING METRICS
+============================================================
+Training users loaded : 700
+Used real labels      : False
+Threat count          : 35
+Accuracy              : 0.964286
+Precision             : 0.600000
+Recall                : 0.857143
+F1-score              : 0.705882
+ROC AUC               : 0.988185
+
+Classification Report
+              precision    recall  f1-score   support
+
+           0       0.99      0.97      0.98       133
+           1       0.60      0.86      0.71         7
+
+    accuracy                           0.96       140
+   macro avg       0.80      0.91      0.84       140
+weighted avg       0.97      0.96      0.97       140
+
+Confusion Matrix
+[[129   4]
+ [  1   6]]
