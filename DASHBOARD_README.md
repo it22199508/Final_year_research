@@ -14,29 +14,68 @@ This interactive menu lets you choose which dashboard(s) to run.
 
 ### Manual Way - Run Individual Dashboards:
 
-#### 1. DEMF Anomaly Detection Dashboard
+#### Using PowerShell Scripts (Recommended):
+
+**1. DEMF Anomaly Detection Dashboard**
 ```powershell
 .\run_demf_dashboard.ps1
 ```
 **Port:** 8501 | **URL:** http://localhost:8501
 
-#### 2. SOC/Cyber Threat Dashboard
+**2. SOC/Cyber Threat Dashboard**
 ```powershell
 .\run_soc_dashboard.ps1
 ```
 **Port:** 8502 | **URL:** http://localhost:8502
 
-#### 3. Email Privilege Misuse Dashboard
+**3. Email Privilege Misuse Dashboard**
 ```powershell
 .\run_email_dashboard.ps1
 ```
 **Port:** 8503 | **URL:** http://localhost:8503
 
-#### 4. Unified HEADS Dashboard
+**4. Unified HEADS Dashboard**
 ```powershell
 .\run_unified_dashboard.ps1
 ```
 **Port:** 8504 | **URL:** http://localhost:8504
+
+---
+
+#### Using Direct Streamlit Commands:
+
+If PowerShell scripts are disabled, use these direct commands:
+
+**1. DEMF Anomaly Detection Dashboard**
+```bash
+streamlit run app_streamlit.py
+```
+Opens the DEMF ensemble ML anomaly detection dashboard
+- **Default Port:** 8501
+- **Features:** One-Class SVM, Autoencoder, real-time scoring
+
+**2. Insider Threat Monitoring Dashboard**
+```bash
+streamlit run apps/streamlit_app.py
+```
+Opens the AI-Driven Insider Threat Monitoring dashboard
+- **Default Port:** 8501 (use `--server.port 8502` to change)
+- **Features:** Real-time alerts, threat monitoring, alert verification
+
+**3. HEADS Threat Monitoring Dashboard**
+```bash
+streamlit run streamlit_app/app.py
+```
+Opens the HEADS (Hybrid Environment Authentication Anomaly Detection) dashboard
+- **Default Port:** 8501 (use `--server.port 8503` to change)
+- **Features:** Authentication anomaly detection, multi-page interface
+
+**To run on specific ports:**
+```bash
+streamlit run app_streamlit.py --server.port 8501
+streamlit run apps/streamlit_app.py --server.port 8502
+streamlit run streamlit_app/app.py --server.port 8503
+```
 
 ---
 
