@@ -14,7 +14,9 @@ import streamlit as st
 current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent
 streamlit_app_dir = project_root / "streamlit_app"
+src_dir = project_root / "src"
 sys.path.insert(0, str(streamlit_app_dir))
+sys.path.insert(0, str(src_dir))
 
 # Configure page
 st.set_page_config(

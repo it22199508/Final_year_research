@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import random
+import sys
 from pathlib import Path
 from typing import Any
 from datetime import datetime
@@ -12,6 +13,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import torch
+
+# Add src directory to path for insider_gru module
+_project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(_project_root / "src"))
 
 from insider_gru.config import OutputConfig, ScoringConfig
 from insider_gru.data import prepare_dataframe

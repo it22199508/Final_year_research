@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -7,6 +8,10 @@ from typing import Any
 
 import pandas as pd
 import streamlit as st
+
+# Add src directory to path for insider_gru module
+_project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(_project_root / "src"))
 
 from insider_gru.config import get_default_config
 from insider_gru.integrity import verify_alert_hash

@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+
+# Add src directory to path for insider_gru module
+_project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(_project_root / "src"))
 
 from insider_gru.data import ensure_datetime, load_event_csvs
 
