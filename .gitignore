@@ -1,64 +1,141 @@
-# Byte-compiled / optimized / DLLs
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# Python cache and compiled files
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
+.Python
 build/
+develop-eggs/
 dist/
-*.egg-info/
-
-# Virtual environments
-venv/
-ENV/
-env/
-.venv/
-venv.bak/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Installer logs
+# Virtual environment
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage
+# Unit test / coverage reports
+htmlcov/
 .tox/
 .nox/
 .coverage
 .coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
 .pytest_cache/
-htmlcov/
 
-# Jupyter
+# Large data files - not for version control
+data/labels.csv
+data/raw/LDAP/*.csv
+data/raw/*.csv
+reports/current/*.csv
+reports/sample/*.csv
+models/current/*.joblib
+models/sample/*.joblib
+
+# Jupyter Notebook
 .ipynb_checkpoints/
+*.ipynb_checkpoints
 
-# Pyenv
-.python-version
+# IPython
+profile_default/
+ipython_config.py
 
-# Mypy
-.mypy_cache/
-
-# IDEs and editors
-.vscode/
+# PyCharm
 .idea/
+*.swp
+*.swo
+*~
 
-# OS files
+# VS Code
+.vscode/
+*.code-workspace
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+.vim/
+*.vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-v][.a-z]
+
+# OS-specific
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Environment files and secrets
-.env
+# IDE
+*.iml
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-settings
+
+# Streamlit
+.streamlit/
+streamlit_caches/
+
+# Logs
+*.log
+logs/
+
+# Optional: Large data and model files (uncomment if needed)
+# data/raw/
+# data/sample_raw/
+# models/
+
+# Data files
+*.csv
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+tmp/
+temp/
+
+# OS temp files
+desktop.ini
+.TemporaryItems
+.VolumeIcon.icns
+
+# Environment variables
 .env.local
-
-# Requirements file (if you prefer not to track it)
-requirements.txt
-
-# Project-specific: data, models, reports
-data/
-models/
-reports/current/
-
-# Misc
-pip-selfcheck.json
+.env.*.local

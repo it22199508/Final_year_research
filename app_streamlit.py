@@ -58,7 +58,7 @@ st.markdown(
     """
 <style>
   .block-container { padding-top: 1.0rem; padding-bottom: 2rem; }
-  .small-muted { color: rgba(0,0,0,0.6); font-size: 0.92rem; }
+  .small-muted { color: white; font-size: 0.92rem; }
   .pill { display:inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.85rem; }
   .pill-critical { background: rgba(220,20,60,0.12); color: rgb(220,20,60); border: 1px solid rgba(220,20,60,0.3); }
   .pill-high { background: rgba(255,140,0,0.12); color: rgb(255,140,0); border: 1px solid rgba(255,140,0,0.3); }

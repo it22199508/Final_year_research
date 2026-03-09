@@ -1,0 +1,20 @@
+{
+  "status": "ok",
+  "labels_path": "data\\labels.csv",
+  "labeled_rows": 334905,
+  "positive_labels": 6698,
+  "positive_rate": 0.01999970140786193,
+  "precision": 0.07998439328911432,
+  "recall": 0.09181845326963273,
+  "f1": 0.08549384861333148,
+  "accuracy": 0.960714232394261,
+  "roc_auc": 0.46283728082730136,
+  "pr_auc": 0.030978929382393734,
+  "current_threshold": 0.2071674825607704,
+  "best_threshold": 0.18,
+  "best_f1": 0.08931070146620429,
+  "tn": 321133,
+  "fp": 7074,
+  "fn": 6083,
+  "tp": 615
+}
