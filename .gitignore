@@ -56,3 +56,10 @@ Dataset/
 
 # Logs
 *.log
+
+# Large data files - not for version control
+data/labels.csv
+data/raw/LDAP/*.csv
+data/raw/*.csv
+reports/current/*.csv
+reports/sample/*.csv
