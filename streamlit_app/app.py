@@ -269,9 +269,13 @@ with tab_eval:
 
             k1,k2,k3,k4 = st.columns(4)
             if len(np.unique(y_true))>1:
-                from sklearn.metrics import roc_auc_score, average_precision_score
-                k1.metric("ROC-AUC", f"{roc_auc_score(y_true, y_score):.3f}")
-                k2.metric("PR-AUC", f"{average_precision_score(y_true, y_score):.3f}")
+                try:
+                    from sklearn.metrics import roc_auc_score, average_precision_score
+                    k1.metric("ROC-AUC", f"{roc_auc_score(y_true, y_score):.3f}")
+                    k2.metric("PR-AUC", f"{average_precision_score(y_true, y_score):.3f}")
+                except ImportError:
+                    k1.metric("ROC-AUC", "Scikit-learn Error")
+                    k2.metric("PR-AUC", "Scikit-learn Error")
             else:
                 k1.metric("ROC-AUC","N/A"); k2.metric("PR-AUC","N/A")
             k3.metric("Attack rate", f"{(y_true==1).mean()*100:.2f}%")
@@ -280,18 +284,21 @@ with tab_eval:
             st.plotly_chart(px.histogram(dfe, x="xgb_proba", nbins=60, title="Probability distribution"), use_container_width=True)
 
             if len(np.unique(y_true))>1:
-                from sklearn.metrics import confusion_matrix, roc_curve, precision_recall_curve
-                import plotly.graph_objects as go
-                cm = confusion_matrix(y_true, y_pred)
-                cm_norm = cm / np.maximum(cm.sum(axis=1, keepdims=True), 1)
-                fig = go.Figure(data=go.Heatmap(z=cm_norm, x=["Pred 0","Pred 1"], y=["True 0","True 1"]))
-                fig.update_layout(title="Confusion Matrix (row-normalized)", height=320)
-                st.plotly_chart(fig, use_container_width=True)
+                try:
+                    from sklearn.metrics import confusion_matrix, roc_curve, precision_recall_curve
+                    import plotly.graph_objects as go
+                    cm = confusion_matrix(y_true, y_pred)
+                    cm_norm = cm / np.maximum(cm.sum(axis=1, keepdims=True), 1)
+                    fig = go.Figure(data=go.Heatmap(z=cm_norm, x=["Pred 0","Pred 1"], y=["True 0","True 1"]))
+                    fig.update_layout(title="Confusion Matrix (row-normalized)", height=320)
+                    st.plotly_chart(fig, use_container_width=True)
 
-                fpr,tpr,_=roc_curve(y_true,y_score)
-                st.plotly_chart(px.line(pd.DataFrame({"fpr":fpr,"tpr":tpr}), x="fpr", y="tpr", title="ROC Curve"), use_container_width=True)
-                prec,rec,_=precision_recall_curve(y_true,y_score)
-                st.plotly_chart(px.line(pd.DataFrame({"recall":rec,"precision":prec}), x="recall", y="precision", title="PR Curve"), use_container_width=True)
+                    fpr,tpr,_=roc_curve(y_true,y_score)
+                    st.plotly_chart(px.line(pd.DataFrame({"fpr":fpr,"tpr":tpr}), x="fpr", y="tpr", title="ROC Curve"), use_container_width=True)
+                    prec,rec,_=precision_recall_curve(y_true,y_score)
+                    st.plotly_chart(px.line(pd.DataFrame({"recall":rec,"precision":prec}), x="recall", y="precision", title="PR Curve"), use_container_width=True)
+                except ImportError:
+                    st.error("Scikit-learn is not available. Please check the installation.")
             else:
                 st.info("Need both classes in evaluation set to draw ROC/PR curves.")
 
