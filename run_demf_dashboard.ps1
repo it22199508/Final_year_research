@@ -1,8 +1,12 @@
 # DEMF Dashboard Runner
 # This runs the DEMF anomaly detection dashboard from sahan-dev branch
 
-Write-Host "Starting DEMF Dashboard..." -ForegroundColor Green
-Write-Host "Dashboard will be available at http://localhost:8501" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Starting DEMF Anomaly Detection Dashboard" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Dashboard URL: http://localhost:8501" -ForegroundColor Yellow
+Write-Host "Press Ctrl+C to stop the dashboard" -ForegroundColor Gray
 Write-Host ""
 
 # Run the DEMF streamlit dashboard

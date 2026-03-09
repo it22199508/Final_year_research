@@ -1,101 +1,254 @@
 # Dashboard Guide
 
-This repository contains **two separate dashboards** that can run independently:
+This repository contains **FOUR separate dashboards** that can run independently or simultaneously:
 
-## 1. DEMF Dashboard (from sahan-dev branch)
+---
 
-**Purpose**: DEMF (Data-driven Ensemble Machine Learning Framework) anomaly detection dashboard
+## 🚀 Quick Start
 
-**Files**:
-- `app_streamlit.py` - Main dashboard application
-- `demf_core.py` - Core DEMF detection logic
-- `config.yaml` - Configuration file
-- `make_labels.py` - Label generation utility
-- `DEMF_ML_Pipeline.ipynb` - Training pipeline notebook
+### Easy Way - Use the Launcher:
+```powershell
+.\START_DASHBOARDS.ps1
+```
+This interactive menu lets you choose which dashboard(s) to run.
 
-**To Run**:
+### Manual Way - Run Individual Dashboards:
+
+#### 1. DEMF Anomaly Detection Dashboard
 ```powershell
 .\run_demf_dashboard.ps1
 ```
-Or manually:
+**Port:** 8501 | **URL:** http://localhost:8501
+
+#### 2. SOC/Cyber Threat Dashboard
 ```powershell
-streamlit run app_streamlit.py --server.port 8501
+.\run_soc_dashboard.ps1
 ```
+**Port:** 8502 | **URL:** http://localhost:8502
 
-**Access**: http://localhost:8501
+#### 3. Email Privilege Misuse Dashboard
+```powershell
+.\run_email_dashboard.ps1
+```
+**Port:** 8503 | **URL:** http://localhost:8503
 
----
-
-## 2. Unified HEADS Dashboard (from merge_branch)
-
-**Purpose**: Unified Hybrid Ensemble Anomaly Detection System with multiple threat detection modules
-
-**Files**:
-- `apps/unified_dashboard.py` - Main unified dashboard
-- `apps/soc_cyber_dashboard.py` - SOC/Cyber threat view
-- `apps/email_privilege_dashboard.py` - Email privilege monitoring
-- `apps/after_hours_login_dashboard.py` - After-hours detection
-- `apps/training_dashboard.py` - Model training interface
-
-**To Run**:
+#### 4. Unified HEADS Dashboard
 ```powershell
 .\run_unified_dashboard.ps1
 ```
-Or manually:
-```powershell
-streamlit run apps/unified_dashboard.py --server.port 8502
-```
-
-**Access**: http://localhost:8502
+**Port:** 8504 | **URL:** http://localhost:8504
 
 ---
 
-## Running Both Dashboards Simultaneously
+## 📊 Dashboard Details
 
-You can run both dashboards at the same time since they use different ports:
-1. Open terminal 1: `.\run_demf_dashboard.ps1` (port 8501)
-2. Open terminal 2: `.\run_unified_dashboard.ps1` (port 8502)
+### 1. DEMF Dashboard (from sahan-dev branch)
+
+**Purpose**: DEMF (Data-driven Ensemble Machine Learning Framework) anomaly detection
+
+**Features**:
+- Ensemble ML anomaly detection
+- One-Class SVM and Autoencoder models
+- Real-time scoring and alerts
+- Feature importance analysis
+
+**Main Files**:
+- `app_streamlit.py` - Dashboard application
+- `demf_core.py` - Core DEMF detection logic
+- `config.yaml` - Configuration file
+- `DEMF_ML_Pipeline.ipynb` - Training pipeline
+
+**Models**: 
+- `models/current/autoencoder.joblib`
+- `models/current/ocsvm.joblib`
+- `models/current/scaler.joblib`
 
 ---
 
-## Requirements
+### 2. SOC/Cyber Threat Dashboard
+
+**Purpose**: Security Operations Center real-time threat monitoring
+
+**Features**:
+- Real-time threat detection
+- Alert prioritization
+- Timeline visualization
+- Auto-refresh monitoring
+
+**Main Files**:
+- `apps/soc_cyber_dashboard.py`
+
+**Data**: Uses processed threat data from `reports/current/`
+
+---
+
+### 3. Email Privilege Misuse Dashboard
+
+**Purpose**: Email behavior analysis and privilege misuse detection
+
+**Features**:
+- GRU-based email behavior model
+- Privilege escalation detection
+- Suspicious email pattern analysis
+- User risk scoring
+
+**Main Files**:
+- `apps/email_privilege_dashboard.py`
+- `src/insider_gru/` - GRU model implementation
+
+**Models**: GRU classifier for email behavior
+
+---
+
+### 4. Unified HEADS Dashboard
+
+**Purpose**: Comprehensive view combining all detection modules
+
+**Features**:
+- All detection modules in one interface
+- Cross-module correlation
+- Unified alert view
+- Comprehensive reporting
+
+**Main Files**:
+- `apps/unified_dashboard.py`
+
+---
+
+## 🔧 Requirements
 
 Install dependencies:
 ```powershell
 pip install -r requirements.txt
 ```
 
-Make sure you have the necessary data files in:
-- `data/raw/` - Raw cybersecurity data
-- `models/current/` - Trained models (or train new ones using notebooks)
-- `reports/current/` - Will be generated when running evaluations
+Essential packages:
+- `streamlit` - Dashboard framework
+- `pandas`, `numpy` - Data processing
+- `scikit-learn` - ML models
+- `torch` - Deep learning (for GRU)
+- `plotly` - Visualizations
 
 ---
 
-## Important Notes
+## 📁 Data Requirements
 
-⚠️ **Do NOT mix code between branches**:
+Make sure you have data in these locations:
+
+**For DEMF Dashboard:**
+- `data/raw/logon.csv` - Login data
+- `data/raw/device.csv` - Device data
+- `data/raw/http.csv` - HTTP data
+- `data/raw/LDAP/` - LDAP data
+- `models/current/` - Trained models
+
+**For Other Dashboards:**
+- `reports/current/scored_events.csv` - Scored events
+- `data/processed/` - Processed data files
+
+**Sample Data:**
+- `data/sample_raw/` - Small sample dataset for testing
+
+---
+
+## 🎯 Running All Dashboards Simultaneously
+
+Each dashboard runs on a different port, so you can run all at once:
+
+```powershell
+# Open 4 PowerShell terminals and run:
+# Terminal 1:
+.\run_demf_dashboard.ps1
+
+# Terminal 2:
+.\run_soc_dashboard.ps1
+
+# Terminal 3:
+.\run_email_dashboard.ps1
+
+# Terminal 4:
+.\run_unified_dashboard.ps1
+```
+
+Or use the launcher option 5 to open all automatically:
+```powershell
+.\START_DASHBOARDS.ps1
+# Select option [5]
+```
+
+**Access All:**
+- DEMF: http://localhost:8501
+- SOC: http://localhost:8502  
+- Email: http://localhost:8503
+- Unified: http://localhost:8504
+
+---
+
+## ⚠️ Important Notes
+
+**Do NOT mix code between branches:**
 - `sahan-dev` code: `app_streamlit.py`, `demf_core.py`, etc.
 - `merge_branch` code: `apps/` directory files
 
-⚠️ **Large files are gitignored**:
+**Large files are gitignored:**
 - CSV files in `data/`, `reports/`
 - Model files (`.joblib`)
-- Store these locally or use Git LFS if needed
+- These stay local or use Git LFS
+
+**Memory Usage:**
+- Running all dashboards simultaneously requires ~2-4GB RAM
+- Each dashboard loads its own models and data
+- Close unused dashboards to free memory
 
 ---
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
-**Port already in use**:
+### Port Already in Use
 ```powershell
-# Find process using port 8501 or 8502
+# Find and kill process on port (e.g., 8501)
 netstat -ano | findstr "8501"
-# Kill the process
 taskkill /PID <process_id> /F
 ```
 
-**Missing dependencies**:
+### Missing Models
 ```powershell
-pip install --upgrade streamlit pandas numpy scikit-learn
+# Train models using notebooks
+jupyter notebook DEMF_ML_Pipeline.ipynb
 ```
+
+### Import Errors
+```powershell
+# Reinstall dependencies
+pip install -r requirements.txt --upgrade
+```
+
+### Dashboard Won't Load
+1. Check if data files exist in `data/raw/`
+2. Verify models exist in `models/current/`
+3. Check terminal for error messages
+4. Try sample data in `data/sample_raw/`
+
+---
+
+## 📖 Training Models
+
+### DEMF Models:
+```powershell
+# Open Jupyter and run:
+jupyter notebook DEMF_ML_Pipeline.ipynb
+```
+
+### GRU Email Models:
+See `apps/training_dashboard.py` or relevant notebooks in `notebooks/`
+
+---
+
+## 🔍 Which Dashboard Should I Use?
+
+- **Testing/Demo** → Use sample data + DEMF Dashboard
+- **Anomaly Detection** → DEMF Dashboard  
+- **Real-time SOC Monitoring** → SOC Dashboard
+- **Email Analysis** → Email Privilege Dashboard
+- **Everything Combined** → Unified Dashboard
+- **Development/Debug** → Run individual dashboards
