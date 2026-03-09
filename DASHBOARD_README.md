@@ -1,6 +1,6 @@
 # Dashboard Guide
 
-This repository contains **FOUR separate dashboards** that can run independently or simultaneously:
+This repository contains **FIVE separate dashboards** that can run independently or simultaneously:
 
 ---
 
@@ -40,6 +40,12 @@ This interactive menu lets you choose which dashboard(s) to run.
 ```
 **Port:** 8504 | **URL:** http://localhost:8504
 
+**5. NSDM Insider Threat Dashboard**
+```powershell
+.\run_nsdm_dashboard.ps1
+```
+**Port:** 8505 | **URL:** http://localhost:8505
+
 ---
 
 #### Using Direct Streamlit Commands:
@@ -70,11 +76,20 @@ Opens the HEADS (Hybrid Environment Authentication Anomaly Detection) dashboard
 - **Default Port:** 8501 (use `--server.port 8503` to change)
 - **Features:** Authentication anomaly detection, multi-page interface
 
+**4. NSDM Insider Threat Dashboard**
+```bash
+streamlit run nsdm/dashboard.py
+```
+Opens the NSDM (Network Security and Data Mining) dashboard
+- **Default Port:** 8501 (use `--server.port 8505` to change)
+- **Features:** CERT r4.2 ensemble detection, RF + LOF models
+
 **To run on specific ports:**
 ```bash
 streamlit run app_streamlit.py --server.port 8501
 streamlit run apps/streamlit_app.py --server.port 8502
 streamlit run streamlit_app/app.py --server.port 8503
+streamlit run nsdm/dashboard.py --server.port 8505
 ```
 
 ---
@@ -151,6 +166,33 @@ streamlit run streamlit_app/app.py --server.port 8503
 
 **Main Files**:
 - `apps/unified_dashboard.py`
+
+---
+
+### 5. NSDM Dashboard (from malith_dev branch)
+
+**Purpose**: Network Security and Data Mining - CERT r4.2 Insider Threat Detection
+
+**Features**:
+- Ensemble ML detection (Random Forest + LOF)
+- Real-time alert monitoring
+- Test user analysis (users 701-1000)
+- Threat score prioritization
+- Privacy-preserving analytics
+
+**Main Files**:
+- `nsdm/dashboard.py` - Main dashboard
+- `nsdm/config.py` - Configuration
+- `nsdm/train_model.py` - Model training
+- `nsdm/realtime_monitor.py` - Real-time monitoring
+- `nsdm/README.md` - Detailed documentation
+
+**Models**:
+- `models/cert_r42_rf_model.pkl` - Random Forest
+- `models/cert_r42_lof_model.pkl` - Local Outlier Factor
+- `models/cert_r42_scaler.pkl` - Feature scaler
+
+**Data**: CERT r4.2 dataset (700 training users, 300 test users)
 
 ---
 

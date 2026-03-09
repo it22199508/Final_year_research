@@ -26,13 +26,17 @@ Write-Host "  [4] Unified HEADS Dashboard" -ForegroundColor Green
 Write-Host "      → Port 8504" -ForegroundColor Gray
 Write-Host "      → All detection modules combined" -ForegroundColor Gray
 Write-Host ""
-Write-Host "  [5] Run All Dashboards" -ForegroundColor Magenta
+Write-Host "  [5] NSDM Insider Threat Dashboard" -ForegroundColor Green
+Write-Host "      → Port 8505" -ForegroundColor Gray
+Write-Host "      → CERT r4.2 ensemble detection (RF + LOF)" -ForegroundColor Gray
+Write-Host ""
+Write-Host "  [6] Run All Dashboards" -ForegroundColor Magenta
 Write-Host "      → Opens all dashboards simultaneously" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  [Q] Quit" -ForegroundColor Red
 Write-Host ""
 
-$choice = Read-Host "Select a dashboard (1-5 or Q)"
+$choice = Read-Host "Select a dashboard (1-6 or Q)"
 
 switch ($choice.ToUpper()) {
     "1" {
@@ -57,6 +61,11 @@ switch ($choice.ToUpper()) {
     }
     "5" {
         Write-Host ""
+        Write-Host "Launching NSDM Dashboard..." -ForegroundColor Green
+        .\run_nsdm_dashboard.ps1
+    }
+    "6" {
+        Write-Host ""
         Write-Host "Launching ALL Dashboards..." -ForegroundColor Magenta
         Write-Host ""
         Write-Host "Opening dashboards in separate windows..." -ForegroundColor Yellow
@@ -71,6 +80,9 @@ switch ($choice.ToUpper()) {
         Start-Sleep -Seconds 2
         
         Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD'; .\run_unified_dashboard.ps1"
+        Start-Sleep -Seconds 2
+        
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD'; .\run_nsdm_dashboard.ps1"
         
         Write-Host ""
         Write-Host "✓ All dashboards started!" -ForegroundColor Green
@@ -80,6 +92,7 @@ switch ($choice.ToUpper()) {
         Write-Host "  • SOC:        http://localhost:8502" -ForegroundColor White
         Write-Host "  • Email:      http://localhost:8503" -ForegroundColor White
         Write-Host "  • Unified:    http://localhost:8504" -ForegroundColor White
+        Write-Host "  • NSDM:       http://localhost:8505" -ForegroundColor White
         Write-Host ""
         Write-Host "Press any key to exit launcher..." -ForegroundColor Gray
         $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

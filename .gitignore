@@ -52,7 +52,8 @@ Dataset/
 *.pt
 *.pth
 *.joblib
-*.pkl
+# Exclude NSDM models (keep them in git)
+!models/cert_r42_*.pkl
 
 # Logs
 *.log
